@@ -17,7 +17,7 @@ var block_value: int
 
 
 func _ready():
-	health = 75
+	health = 7
 	block = 0
 	set_next_intent()
 	update_displays()

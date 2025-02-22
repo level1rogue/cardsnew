@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://55dbmubt8qa0"]
+[gd_scene load_steps=5 format=3 uid="uid://55dbmubt8qa0"]
 
 [ext_resource type="Script" path="res://scripts/card_slot.gd" id="1_qddan"]
 [ext_resource type="Texture2D" uid="uid://bue4f8wwsiutv" path="res://assets/cards/slot.png" id="1_w568v"]
+[ext_resource type="Texture2D" uid="uid://bsq6n32a0fwdf" path="res://assets/icons/lock.png" id="2_sw82a"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wvxlw"]
 size = Vector2(218, 290)
@@ -25,6 +26,11 @@ grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[node name="LockImage" type="Sprite2D" parent="Panel"]
+position = Vector2(54, 35)
+scale = Vector2(0.125, 0.125)
+texture = ExtResource("2_sw82a")
+
 [node name="CardSlotImage" type="Sprite2D" parent="."]
 visible = false
 position = Vector2(52.5, 34)
@@ -40,8 +46,9 @@ position = Vector2(54.5, 35.75)
 scale = Vector2(0.5, 0.25)
 shape = SubResource("RectangleShape2D_wvxlw")
 
-[node name="GlowShape" type="Polygon2D" parent="."]
-visible = false
-position = Vector2(-57, -34)
-color = Color(1, 1, 1, 0.356863)
-polygon = PackedVector2Array(0, -1, 110, 0, 111, 74, 2, 73)
+[node name="MultLabel" type="Label" parent="."]
+offset_left = 6.0
+offset_top = 1.0
+offset_right = 46.0
+offset_bottom = 24.0
+text = "2x"

@@ -10,6 +10,8 @@ extends Node2D
 var voice_stats = preload("res://scripts/voice_stats.gd").new()
 var floating_text_scene = preload("res://scenes/floating_text.tscn")
 
+var reward_screen_scene = preload("res://scenes/reward_screen.tscn")
+
 func _ready():
 	if !combat_manager:
 		push_error("CombatManager node not found!")
@@ -32,15 +34,17 @@ func start_player_turn():
 	combat_manager.player_block = 0  # Reset block
 	combat_manager.reset_player_energy()  # Reset energy
 	play_button.disabled = false  # Re-enable play button
-	# Reset slots that didn't play last turn
+	
+	# Reset only slots that weren't used last turn
 	for slot in get_tree().get_nodes_in_group("card_slots"):
-			if slot.last_action == "none":
-					slot.reset_action()
+		if slot.last_action == "none":
+			slot.reset_action()
+	
+	# Draw new hand
+	$PlayerHand.draw_starting_hand()
 	
 	battle_log.add_entry("Player turn started", "normal")
 	update_slot_availability()
-
-	#TODO: Draw cards (implement card drawing logic)
 
 
 func _on_button_pressed():
@@ -57,6 +61,9 @@ func _on_button_pressed():
 	# Play notes and resolve actions
 	play_card_notes()
 	resolve_player_actions()
+	
+	# Discard remaining cards in hand
+	$PlayerHand.discard_hand()
 	
 	# Disable play button until next turn
 	play_button.disabled = true
@@ -91,46 +98,49 @@ func resolve_player_actions():
 	var total_block = 0
 
 	battle_log.add_entry("Playing cards...", "normal")
-
-	# First play all notes
 	play_card_notes()
-	
-	# Calculate and apply effects
-	var played_voices = []
-	
-	for slot in get_tree().get_nodes_in_group("card_slots"):
-			if slot.card_in_slot and slot.occupied_card:
-					played_voices.append(slot.voice)
-					slot.record_action()
-					
-					if slot.name.ends_with("A"):
-							var damage = calculate_attack_value(slot.occupied_card, slot)
-							total_attack += damage
-							battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
-									" voice attacks for " + str(damage), "damage")
-					else:
-							var block = calculate_block_value(slot.occupied_card, slot)
-							total_block += block
-							battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
-									" voice blocks for " + str(block), "block")
-			elif not slot.voice in played_voices:
-					slot.last_action = "none"  # Reset unplayed voices
-	
-	
 
+	# Track which voices were used this turn
+	var voice_actions = {}  # Dictionary to track voice actions
+	
+	# First pass: Record actions and calculate effects
+	for slot in get_tree().get_nodes_in_group("card_slots"):
+		if slot.card_in_slot and slot.occupied_card:
+			voice_actions[slot.voice] = slot.is_attack_slot()
+			slot.record_action()
+			
+			if slot.is_attack_slot():
+				var damage = calculate_attack_value(slot.occupied_card, slot)
+				total_attack += damage
+				battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
+					" voice attacks for " + str(damage), "damage")
+			else:
+				var block = calculate_block_value(slot.occupied_card, slot)
+				total_block += block
+				battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
+					" voice blocks for " + str(block), "block")
+	update_slot_availability()  # Update after recording actions
+	
+	# Second pass: Reset unused voices
+	for slot in get_tree().get_nodes_in_group("card_slots"):
+		if not slot.voice in voice_actions:
+			slot.reset_action()
+			battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
+				" voice rests this turn", "normal")
+	update_slot_availability()  # Update after recording actions
+	
 	# Apply block first
 	if total_block > 0:
-			combat_manager.player_block += total_block
-			show_player_floating_text(total_block, false)
-			battle_log.add_entry("Player gained " + str(total_block) + " block", "block")
-
-			_on_stats_changed()  # Update UI
-	  
+		combat_manager.player_block += total_block
+		show_player_floating_text(total_block, false)
+		battle_log.add_entry("Player gained " + str(total_block) + " block", "block")
+		_on_stats_changed()  # Update UI
+	
 	# Then apply damage after a short delay
 	if total_attack > 0:
-			await get_tree().create_timer(0.5).timeout
-			battle_log.add_entry("Player attacks for " + str(total_attack) + " damage", "damage")
-			apply_damage_to_enemy(total_attack)
+		await get_tree().create_timer(0.5).timeout
+		battle_log.add_entry("Player attacks for " + str(total_attack) + " damage", "damage")
+		apply_damage_to_enemy(total_attack)
 	
 	# Clear cards from slots
 	clear_played_cards()
@@ -139,7 +149,7 @@ func resolve_player_actions():
 	await get_tree().create_timer(1.0).timeout
 	start_enemy_turn()
 
-func update_slot_availability():
+func update_slot_availability(): #FIXME: Slots don't update correctly
 	for slot in get_tree().get_nodes_in_group("card_slots"):
 		slot.update_slot_availability()
 				
@@ -156,6 +166,11 @@ func apply_damage_to_enemy(damage: int):
 		battle_log.add_entry("Enemy blocked " + str(damage_blocked) + " damage", "block")
 	if damage_dealt > 0:
 		battle_log.add_entry("Enemy took " + str(damage_dealt) + " damage", "damage")
+
+	# Check for enemy death
+	if enemy.health <= 0:
+			await get_tree().create_timer(1.0).timeout  # Short delay
+			show_victory_screen()
 
 
 func apply_damage_to_player(damage: int):
@@ -186,6 +201,8 @@ func show_player_floating_text(value: int, is_damage: bool):
 func clear_played_cards():
 	for slot in get_tree().get_nodes_in_group("card_slots"):
 		if slot.card_in_slot and slot.occupied_card:
+			# Add to discard pile before destroying
+			$Deck.add_to_discard(slot.occupied_card.card_id)
 			slot.occupied_card.queue_free()
 			slot.card_in_slot = false
 			slot.occupied_card = null
@@ -212,3 +229,25 @@ func start_enemy_turn():
 	enemy.set_next_intent()
 	battle_log.add_entry("Enemy prepares next action", "enemy")
 	start_player_turn()
+
+func show_victory_screen():
+	battle_log.add_entry("Victory!", "normal")
+	
+	# Instance and show reward screen
+	var reward_screen = reward_screen_scene.instantiate()
+	add_child(reward_screen)
+	
+	# Make it cover the whole screen
+	reward_screen.anchors_preset = Control.PRESET_FULL_RECT
+	
+	# Connect signals
+	reward_screen.reward_selected.connect(_on_reward_selected)
+	
+	# Disable battle UI
+	play_button.disabled = true
+	# Could fade out battle elements here
+
+func _on_reward_selected():
+	# Handle reward selection and transition to next scene
+	# For now, just restart battle
+	get_tree().reload_current_scene()

@@ -67,28 +67,52 @@ velocity = 5
 script = ExtResource("1_t52mj")
 
 [node name="CardSlot1A" parent="." instance=ExtResource("3_inde7")]
-position = Vector2(711, 647)
+offset_left = 711.0
+offset_top = 647.0
+offset_right = 820.0
+offset_bottom = 719.0
 
 [node name="CardSlot1B" parent="." instance=ExtResource("3_inde7")]
-position = Vector2(711, 720)
+offset_left = 711.0
+offset_top = 720.0
+offset_right = 820.0
+offset_bottom = 792.0
 
 [node name="CardSlot2A" parent="." instance=ExtResource("3_inde7")]
-position = Vector2(860, 647)
+offset_left = 860.0
+offset_top = 647.0
+offset_right = 969.0
+offset_bottom = 719.0
 
 [node name="CardSlot2B" parent="." instance=ExtResource("3_inde7")]
-position = Vector2(860, 720)
+offset_left = 860.0
+offset_top = 720.0
+offset_right = 969.0
+offset_bottom = 792.0
 
 [node name="CardSlot3A" parent="." instance=ExtResource("3_inde7")]
-position = Vector2(1011, 647)
+offset_left = 1011.0
+offset_top = 647.0
+offset_right = 1120.0
+offset_bottom = 719.0
 
 [node name="CardSlot3B" parent="." instance=ExtResource("3_inde7")]
-position = Vector2(1011, 720)
+offset_left = 1011.0
+offset_top = 720.0
+offset_right = 1120.0
+offset_bottom = 792.0
 
 [node name="CardSlot4A" parent="." instance=ExtResource("3_inde7")]
-position = Vector2(1160, 647)
+offset_left = 1160.0
+offset_top = 647.0
+offset_right = 1269.0
+offset_bottom = 719.0
 
 [node name="CardSlot4B" parent="." instance=ExtResource("3_inde7")]
-position = Vector2(1160, 720)
+offset_left = 1160.0
+offset_top = 720.0
+offset_right = 1269.0
+offset_bottom = 792.0
 
 [node name="CardManager" type="Node2D" parent="."]
 script = ExtResource("2_gcqbg")
