@@ -1,6 +1,8 @@
 extends Control
 
-@onready var log_text = $ScrollContainer/VBoxContainer/RichTextLabel
+@onready var log_text = $ScrollContainer/VBoxContainer/MarginContainer/RichTextLabel
+@onready var scroll = $ScrollContainer
+
 var max_lines = 10
 
 func add_entry(text: String, type: String = "normal"):
@@ -25,3 +27,7 @@ func add_entry(text: String, type: String = "normal"):
 	# Auto-scroll to bottom
 	await get_tree().create_timer(0.1).timeout
 	log_text.scroll_to_line(log_text.get_line_count())
+	
+	# Force scroll to bottom
+	await get_tree().create_timer(0.05).timeout
+	scroll.scroll_vertical = scroll.get_v_scroll_bar().max_value
