@@ -13,9 +13,9 @@ func add_entry(text: String, type: String = "normal"):
 		"damage":
 			color_code = "[color=red]"
 		"block":
-			color_code = "[color=green]"
-		"heal":
 			color_code = "[color=yellow]"
+		"heal":
+			color_code = "[color=green]"
 		"enemy":
 			color_code = "[color=purple]"
 		_:

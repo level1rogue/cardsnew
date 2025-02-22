@@ -41,12 +41,14 @@ func finish_drag():
 					slot.occupied_card = null
 	
 	# Then handle placing in new slot or returning to hand
-	if card_slot_found and not card_slot_found.card_in_slot:
-			player_hand_reference.remove_card_from_hand(card_being_dragged)
-			card_being_dragged.position = card_slot_found.position
-			# card_being_dragged.get_node("Area2D/CollisionShape2D").disabled = true
-			card_slot_found.card_in_slot = true
-			card_slot_found.occupied_card = card_being_dragged
+	if card_slot_found and not card_slot_found.card_in_slot and card_slot_found.can_play_card():
+		player_hand_reference.remove_card_from_hand(card_being_dragged)
+		# Calculate center position of the slot
+		var slot_center = card_slot_found.global_position + Vector2(card_slot_found.size.x/2, card_slot_found.size.y/2)
+		card_being_dragged.position = slot_center
+		card_slot_found.card_in_slot = true
+		card_slot_found.occupied_card = card_being_dragged
+	
 	else:
 			player_hand_reference.add_card_to_hand(card_being_dragged)
 	

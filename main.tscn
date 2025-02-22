@@ -130,7 +130,7 @@ offset_bottom = 767.0
 [node name="FloatingText" parent="." instance=ExtResource("19_fkjdy")]
 
 [node name="BattleLog" parent="." instance=ExtResource("20_baqo8")]
-offset_left = 1465.0
-offset_top = 220.0
-offset_right = 1865.0
-offset_bottom = 620.0
+offset_left = 1470.0
+offset_top = 139.0
+offset_right = 1870.0
+offset_bottom = 819.0

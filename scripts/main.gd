@@ -7,6 +7,7 @@ extends Node2D
 @onready var sampler = $SamplerInstrument
 @onready var battle_log = $BattleLog
 
+var voice_stats = preload("res://scripts/voice_stats.gd").new()
 var floating_text_scene = preload("res://scenes/floating_text.tscn")
 
 func _ready():
@@ -31,9 +32,16 @@ func start_player_turn():
 	combat_manager.player_block = 0  # Reset block
 	combat_manager.reset_player_energy()  # Reset energy
 	play_button.disabled = false  # Re-enable play button
+	# Reset slots that didn't play last turn
+	for slot in get_tree().get_nodes_in_group("card_slots"):
+			if slot.last_action == "none":
+					slot.reset_action()
+	
 	battle_log.add_entry("Player turn started", "normal")
+	update_slot_availability()
 
 	#TODO: Draw cards (implement card drawing logic)
+
 
 func _on_button_pressed():
 	var total_energy_cost = calculate_total_energy_cost()
@@ -66,13 +74,17 @@ func play_card_notes():
 		if slot.card_in_slot and slot.occupied_card:
 			sampler.play_note(slot.occupied_card.note, slot.octave)
 	
-func calculate_attack_value(card) -> int:
-	# For now, return a basic value. You can make this more complex later
-	return 5  # Basic attack value per card
+func calculate_attack_value(card, slot) -> int:
+	var base_attack = 5  # Base attack value
+	var multiplier = voice_stats.get_multipliers(slot.voice).attack_multiplier
+	return int(base_attack * multiplier)
 
-func calculate_block_value(card) -> int:
-	# For now, return a basic value. You can make this more complex later
-	return 3  # Basic block value per card
+
+func calculate_block_value(card, slot) -> int:
+	var base_block = 3  # Base block value
+	var multiplier = voice_stats.get_multipliers(slot.voice).block_multiplier
+	return int(base_block * multiplier)
+
 	
 func resolve_player_actions():
 	var total_attack = 0
@@ -84,17 +96,27 @@ func resolve_player_actions():
 	play_card_notes()
 	
 	# Calculate and apply effects
+	var played_voices = []
+	
 	for slot in get_tree().get_nodes_in_group("card_slots"):
-		if slot.card_in_slot and slot.occupied_card:
-			if slot.name.ends_with("A"):  # Higher octave = Attack
-				var damage = calculate_attack_value(slot.occupied_card)
-				total_attack += damage
-				battle_log.add_entry("Card in " + slot.name + " adds " + str(damage) + " attack", "damage")
-			else:
-				var block = calculate_block_value(slot.occupied_card)
-				total_block += block
-				battle_log.add_entry("Card in " + slot.name + " adds " + str(block) + " block", "block")
-
+			if slot.card_in_slot and slot.occupied_card:
+					played_voices.append(slot.voice)
+					slot.record_action()
+					
+					if slot.name.ends_with("A"):
+							var damage = calculate_attack_value(slot.occupied_card, slot)
+							total_attack += damage
+							battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
+									" voice attacks for " + str(damage), "damage")
+					else:
+							var block = calculate_block_value(slot.occupied_card, slot)
+							total_block += block
+							battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
+									" voice blocks for " + str(block), "block")
+			elif not slot.voice in played_voices:
+					slot.last_action = "none"  # Reset unplayed voices
+	
+	
 
 	# Apply block first
 	if total_block > 0:
@@ -117,6 +139,10 @@ func resolve_player_actions():
 	await get_tree().create_timer(1.0).timeout
 	start_enemy_turn()
 
+func update_slot_availability():
+	for slot in get_tree().get_nodes_in_group("card_slots"):
+		slot.update_slot_availability()
+				
 func apply_damage_to_enemy(damage: int):
 	var initial_health = enemy.health
 	var initial_block = enemy.block
