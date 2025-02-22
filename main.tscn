@@ -1,0 +1,136 @@
+[gd_scene load_steps=27 format=3 uid="uid://cdn7te02yfxv2"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_t52mj"]
+[ext_resource type="Script" path="res://scripts/card_manager.gd" id="2_gcqbg"]
+[ext_resource type="Script" path="res://scripts/player_hand.gd" id="3_4cism"]
+[ext_resource type="PackedScene" uid="uid://55dbmubt8qa0" path="res://scenes/card_slot.tscn" id="3_inde7"]
+[ext_resource type="PackedScene" uid="uid://fk4u38kgg02i" path="res://scenes/deck.tscn" id="4_o4ktd"]
+[ext_resource type="Script" path="res://scripts/deck.gd" id="5_4jp7m"]
+[ext_resource type="Script" path="res://scripts/input_manager.gd" id="6_2lhe2"]
+[ext_resource type="Script" path="res://addons/SimpleSampler/sampler_instrument.gd" id="7_netjt"]
+[ext_resource type="Script" path="res://addons/SimpleSampler/sample_resource.gd" id="8_0i63p"]
+[ext_resource type="AudioStream" uid="uid://dbek3v6w10s23" path="res://assets/sound/choir_2/choir_2-A1.mp3" id="9_vvmec"]
+[ext_resource type="AudioStream" uid="uid://daqb41fljyp5w" path="res://assets/sound/choir_2/choir_2-D2.mp3" id="10_0i63p"]
+[ext_resource type="AudioStream" uid="uid://uqkbebtmwcls" path="res://assets/sound/choir_2/choir_2-A2.mp3" id="11_qusja"]
+[ext_resource type="AudioStream" uid="uid://br7xrjdrrnruu" path="res://assets/sound/choir_2/choir_2-A3.mp3" id="12_5a0a5"]
+[ext_resource type="AudioStream" uid="uid://f8dev5t3ygys" path="res://assets/sound/choir_2/choir_2-E3.mp3" id="13_0i63p"]
+[ext_resource type="AudioStream" uid="uid://dy748xuh54ffk" path="res://assets/sound/choir_2/choir_2-D4.mp3" id="14_0i63p"]
+[ext_resource type="PackedScene" uid="uid://c085wiwr1m2q7" path="res://scenes/enemy.tscn" id="16_ty1yc"]
+[ext_resource type="Script" path="res://scripts/combat_manager.gd" id="17_jb8sw"]
+[ext_resource type="PackedScene" uid="uid://bnd5j4rptjo0g" path="res://scenes/stats_display.tscn" id="18_usmh5"]
+[ext_resource type="PackedScene" uid="uid://bp6xdqjobwxcm" path="res://scenes/floating_text.tscn" id="19_fkjdy"]
+[ext_resource type="PackedScene" uid="uid://dj08cw7xhq84" path="res://scenes/battle_log.tscn" id="20_baqo8"]
+
+[sub_resource type="Resource" id="Resource_g4bxl"]
+script = ExtResource("8_0i63p")
+stream = ExtResource("9_vvmec")
+tone = "A"
+octave = 1
+velocity = 5
+
+[sub_resource type="Resource" id="Resource_ijx3b"]
+script = ExtResource("8_0i63p")
+stream = ExtResource("11_qusja")
+tone = "A"
+octave = 2
+velocity = 5
+
+[sub_resource type="Resource" id="Resource_hckev"]
+script = ExtResource("8_0i63p")
+stream = ExtResource("10_0i63p")
+tone = "D"
+octave = 2
+velocity = 5
+
+[sub_resource type="Resource" id="Resource_hkpbm"]
+script = ExtResource("8_0i63p")
+stream = ExtResource("13_0i63p")
+tone = "E"
+octave = 3
+velocity = 5
+
+[sub_resource type="Resource" id="Resource_nxq53"]
+script = ExtResource("8_0i63p")
+stream = ExtResource("12_5a0a5")
+tone = "A"
+octave = 3
+velocity = 5
+
+[sub_resource type="Resource" id="Resource_5dbxj"]
+script = ExtResource("8_0i63p")
+stream = ExtResource("14_0i63p")
+tone = "D"
+octave = 4
+velocity = 5
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_t52mj")
+
+[node name="CardSlot1A" parent="." instance=ExtResource("3_inde7")]
+position = Vector2(711, 647)
+
+[node name="CardSlot1B" parent="." instance=ExtResource("3_inde7")]
+position = Vector2(711, 720)
+
+[node name="CardSlot2A" parent="." instance=ExtResource("3_inde7")]
+position = Vector2(860, 647)
+
+[node name="CardSlot2B" parent="." instance=ExtResource("3_inde7")]
+position = Vector2(860, 720)
+
+[node name="CardSlot3A" parent="." instance=ExtResource("3_inde7")]
+position = Vector2(1011, 647)
+
+[node name="CardSlot3B" parent="." instance=ExtResource("3_inde7")]
+position = Vector2(1011, 720)
+
+[node name="CardSlot4A" parent="." instance=ExtResource("3_inde7")]
+position = Vector2(1160, 647)
+
+[node name="CardSlot4B" parent="." instance=ExtResource("3_inde7")]
+position = Vector2(1160, 720)
+
+[node name="CardManager" type="Node2D" parent="."]
+script = ExtResource("2_gcqbg")
+
+[node name="PlayerHand" type="Node2D" parent="."]
+script = ExtResource("3_4cism")
+
+[node name="Deck" parent="." instance=ExtResource("4_o4ktd")]
+position = Vector2(136, 944)
+scale = Vector2(0.5, 0.5)
+script = ExtResource("5_4jp7m")
+
+[node name="InputManager" type="Node2D" parent="."]
+script = ExtResource("6_2lhe2")
+
+[node name="Button" type="Button" parent="."]
+offset_left = 1304.0
+offset_top = 662.0
+offset_right = 1401.0
+offset_bottom = 701.0
+text = "Play"
+
+[node name="SamplerInstrument" type="AudioStreamPlayer" parent="."]
+script = ExtResource("7_netjt")
+samples = Array[ExtResource("8_0i63p")]([SubResource("Resource_g4bxl"), SubResource("Resource_ijx3b"), SubResource("Resource_hckev"), SubResource("Resource_hkpbm"), SubResource("Resource_nxq53"), SubResource("Resource_5dbxj")])
+
+[node name="Enemy" parent="." instance=ExtResource("16_ty1yc")]
+position = Vector2(939, 178)
+
+[node name="CombatManager" type="Node" parent="."]
+script = ExtResource("17_jb8sw")
+
+[node name="PlayerStats" parent="." instance=ExtResource("18_usmh5")]
+offset_left = 85.0
+offset_top = 635.0
+offset_right = 212.0
+offset_bottom = 767.0
+
+[node name="FloatingText" parent="." instance=ExtResource("19_fkjdy")]
+
+[node name="BattleLog" parent="." instance=ExtResource("20_baqo8")]
+offset_left = 1465.0
+offset_top = 220.0
+offset_right = 1865.0
+offset_bottom = 620.0

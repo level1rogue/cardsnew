@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3 uid="uid://c085wiwr1m2q7"]
+
+[ext_resource type="Script" path="res://scripts/intent_display.gd" id="1_iwoo1"]
+[ext_resource type="Texture2D" uid="uid://ciu288ktw4i8m" path="res://assets/cards/base_card.png" id="1_py5yi"]
+[ext_resource type="Script" path="res://scripts/enemy.gd" id="1_qarmg"]
+[ext_resource type="PackedScene" uid="uid://bnd5j4rptjo0g" path="res://scenes/stats_display.tscn" id="4_jeein"]
+
+[node name="Enemy" type="Node2D"]
+script = ExtResource("1_qarmg")
+
+[node name="IntentDisplay" type="Node2D" parent="."]
+script = ExtResource("1_iwoo1")
+
+[node name="ValueLabel" type="Label" parent="IntentDisplay"]
+offset_left = -61.0
+offset_top = -68.0
+offset_right = 21.0
+offset_bottom = -35.0
+scale = Vector2(1.5, 1.5)
+text = "Attack"
+horizontal_alignment = 1
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0, 47)
+scale = Vector2(0.454545, 0.454545)
+texture = ExtResource("1_py5yi")
+
+[node name="StatsDisplay" parent="." instance=ExtResource("4_jeein")]
