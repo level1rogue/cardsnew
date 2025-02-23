@@ -1,6 +1,6 @@
 extends Node2D
 
-@onready var battle_log = $BattleLog
+
 var card_db_ref
 const CARD_SCENE_PATH = "res://scenes/card.tscn"
 var player_deck = ["c", "d", "c", "e", "f", "e", "f", "d"]
@@ -50,12 +50,16 @@ func draw_card():
 		new_card.set_card_id(card_drawn)  # Set the card's ID
 		new_card.set_note(card_data.name)  # Set the note property
 		new_card.set_energy_cost(card_data.cost)  # Set energy cost
+		new_card.set_power(card_data.power)  # Set power
+		new_card.set_cooldown(card_data.cooldown)  # Set cooldown
 		new_card.get_node("CostLabel").text = str(card_data.cost)
 		new_card.get_node("NameLabel").text = card_data.name
 
 		var color = card_db_ref.CARDS[card_drawn].color
 		var texture = str("res://assets/cards/note_card-", color, ".png")
 		new_card.get_node("CostLabel").text = str(card_db_ref.CARDS[card_drawn].cost)
+		new_card.get_node("PowerLabel").text = str(card_db_ref.CARDS[card_drawn].power)
+		new_card.get_node("CooldownLabel").text = str(card_db_ref.CARDS[card_drawn].cooldown)
 		new_card.get_node("NameLabel").text = card_db_ref.CARDS[card_drawn].name
 		new_card.get_node("CardImage").texture = load(texture)
 		$"../CardManager".add_child(new_card)

@@ -1,5 +1,7 @@
 extends Node2D
 
+const CardSlot = preload("res://scripts/card_slot.gd")
+
 @onready var combat_manager = $CombatManager
 @onready var enemy = $Enemy
 @onready var play_button = $Button
@@ -21,6 +23,11 @@ func _ready():
 	_on_stats_changed()  # Initial update
 	play_button.pressed.connect(_on_button_pressed)
 	start_player_turn()
+	enemy.log_message.connect(_on_enemy_log_message)
+
+func _on_enemy_log_message(text: String, type: String):
+	battle_log.add_entry(text, type)
+
 
 
 func _on_stats_changed():
@@ -34,12 +41,7 @@ func start_player_turn():
 	combat_manager.player_block = 0  # Reset block
 	combat_manager.reset_player_energy()  # Reset energy
 	play_button.disabled = false  # Re-enable play button
-	
-	# Reset only slots that weren't used last turn
-	for slot in get_tree().get_nodes_in_group("card_slots"):
-		if slot.last_action == "none":
-			slot.reset_action()
-	
+
 	# Draw new hand
 	$PlayerHand.draw_starting_hand()
 	
@@ -81,66 +83,74 @@ func play_card_notes():
 		if slot.card_in_slot and slot.occupied_card:
 			sampler.play_note(slot.occupied_card.note, slot.octave)
 	
-func calculate_attack_value(card, slot) -> int:
-	var base_attack = 5  # Base attack value
-	var multiplier = voice_stats.get_multipliers(slot.voice).attack_multiplier
-	return int(base_attack * multiplier)
-
-
-func calculate_block_value(card, slot) -> int:
-	var base_block = 3  # Base block value
-	var multiplier = voice_stats.get_multipliers(slot.voice).block_multiplier
-	return int(base_block * multiplier)
+func calculate_slot_effect(card, slot) -> Dictionary:
+	print("Card: ", card)  # See what properties are available
+	print("Card power: ", card.power)  # See if power is accessible
+	
+	var base_value = card.power  # Base value for all effects
+	var multiplier = slot.get_slot_multiplier()
+	var effect_value = int(base_value * multiplier)
+	
+	match slot.slot_type:
+		CardSlot.SlotType.ATTACK:
+			return {"type": "attack", "value": effect_value}
+		CardSlot.SlotType.BLOCK:
+			return {"type": "block", "value": effect_value}
+		CardSlot.SlotType.UTILITY:
+			var effect_type = "vulnerability" if slot.name.ends_with("A") else "weak"
+			return {"type": effect_type, "value": effect_value}
+	
+	return {"type": "none", "value": 0}
 
 	
 func resolve_player_actions():
-	var total_attack = 0
-	var total_block = 0
+	var effects = {
+			"attack": 0,
+			"block": 0,
+			"vulnerability": 0,
+			"weak": 0
+	}
 
 	battle_log.add_entry("Playing cards...", "normal")
 	play_card_notes()
-
-	# Track which voices were used this turn
-	var voice_actions = {}  # Dictionary to track voice actions
 	
-	# First pass: Record actions and calculate effects
+	# Calculate all effects
 	for slot in get_tree().get_nodes_in_group("card_slots"):
-		if slot.card_in_slot and slot.occupied_card:
-			voice_actions[slot.voice] = slot.is_attack_slot()
-			slot.record_action()
+			if slot.card_in_slot and slot.occupied_card:
+					var effect = calculate_slot_effect(slot.occupied_card, slot)
+					effects[effect.type] += effect.value
+					slot.record_action()
+					
+					battle_log.add_entry(
+							voice_stats.get_multipliers(slot.voice).name + 
+							" voice applies " + str(effect.value) + " " + effect.type,
+							effect.type
+					)
+	
+	# Apply effects in order
+	if effects.vulnerability > 0:
+		print("vulnerability")
+		apply_vulnerability(effects.vulnerability)
+	if effects.weak > 0:
+		print("weak")
+		apply_weak(effects.weak)
+	if effects.block > 0:
+			combat_manager.player_block += effects.block
+			show_player_floating_text(effects.block, false)
+	if effects.attack > 0:
+			await get_tree().create_timer(0.5).timeout
+			apply_damage_to_enemy(effects.attack)
 			
-			if slot.is_attack_slot():
-				var damage = calculate_attack_value(slot.occupied_card, slot)
-				total_attack += damage
-				battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
-					" voice attacks for " + str(damage), "damage")
-			else:
-				var block = calculate_block_value(slot.occupied_card, slot)
-				total_block += block
-				battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
-					" voice blocks for " + str(block), "block")
 	update_slot_availability()  # Update after recording actions
 	
 	# Second pass: Reset unused voices
-	for slot in get_tree().get_nodes_in_group("card_slots"):
-		if not slot.voice in voice_actions:
-			slot.reset_action()
-			battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
-				" voice rests this turn", "normal")
-	update_slot_availability()  # Update after recording actions
+	# for slot in get_tree().get_nodes_in_group("card_slots"):
+	# 	if not slot.voice in voice_actions:
+	# 		slot.reset_action()
+	# 		battle_log.add_entry(voice_stats.get_multipliers(slot.voice).name + 
+	# 			" voice rests this turn", "normal")
 	
-	# Apply block first
-	if total_block > 0:
-		combat_manager.player_block += total_block
-		show_player_floating_text(total_block, false)
-		battle_log.add_entry("Player gained " + str(total_block) + " block", "block")
-		_on_stats_changed()  # Update UI
 	
-	# Then apply damage after a short delay
-	if total_attack > 0:
-		await get_tree().create_timer(0.5).timeout
-		battle_log.add_entry("Player attacks for " + str(total_attack) + " damage", "damage")
-		apply_damage_to_enemy(total_attack)
 	
 	# Clear cards from slots
 	clear_played_cards()
@@ -156,6 +166,13 @@ func update_slot_availability(): #FIXME: Slots don't update correctly
 func apply_damage_to_enemy(damage: int):
 	var initial_health = enemy.health
 	var initial_block = enemy.block
+	
+	# Log the initial damage value
+	battle_log.add_entry("Base damage: " + str(damage), "normal")
+	
+	# Check vulnerability before damage
+	if enemy.vulnerability_turns > 0:
+			battle_log.add_entry("Vulnerability +" + str(enemy.vulnerability_turns) + " turns: damage x1.5", "debuff")
 	
 	enemy.take_damage(damage)
 	
@@ -213,7 +230,10 @@ func start_enemy_turn():
 	
 	match enemy_action:
 		enemy.Intent.ATTACK:
-			battle_log.add_entry("Enemy attacks for " + str(enemy.attack_value), "enemy")
+			battle_log.add_entry("Enemy intends to attack", "enemy")
+			battle_log.add_entry("Base attack: " + str(enemy.attack_value), "enemy")
+			if enemy.weak_turns > 0:
+				battle_log.add_entry("Weak active (" + str(enemy.weak_turns) + " turns)", "debuff")
 			await get_tree().create_timer(0.5).timeout
 			apply_damage_to_player(enemy.attack_value)
 		enemy.Intent.BLOCK:
@@ -226,9 +246,36 @@ func start_enemy_turn():
 			apply_damage_to_player(enemy.attack_value)
 	
 	await get_tree().create_timer(1.0).timeout
+	enemy.end_turn()  # This will reduce status effect counters
 	enemy.set_next_intent()
 	battle_log.add_entry("Enemy prepares next action", "enemy")
+
+		
+	# Reset ALL slots at the start of turn
+	for slot in get_tree().get_nodes_in_group("card_slots"):
+		slot.reset_action()
+	
 	start_player_turn()
+
+func apply_vulnerability(amount: int):
+	enemy.add_vulnerability(amount)
+	battle_log.add_entry("Enemy gained " + str(amount) + " Vulnerability", "debuff")
+	show_enemy_floating_text(amount, "vulnerability")
+
+func apply_weak(amount: int):
+	enemy.add_weak(amount)
+	battle_log.add_entry("Enemy gained " + str(amount) + " weak", "debuff")
+	show_enemy_floating_text(amount, "weak")
+
+func show_enemy_floating_text(value: int, effect_type: String):
+	var floating_text = floating_text_scene.instantiate()
+	enemy.add_child(floating_text)
+	
+	match effect_type:
+		"vulnerability":
+			floating_text.show_status_effect(str(value) + " VUL", Color(0.8, 0.35, 0.36))
+		"weak":
+			floating_text.show_status_effect(str(value) + " WEAK", Color(0.83, 0.65, 0.13))
 
 func show_victory_screen():
 	battle_log.add_entry("Victory!", "normal")

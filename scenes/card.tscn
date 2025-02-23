@@ -1,7 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://cmsyn5w67nn10"]
+[gd_scene load_steps=7 format=3 uid="uid://cmsyn5w67nn10"]
 
 [ext_resource type="Script" path="res://scripts/card.gd" id="1_elmj4"]
 [ext_resource type="Texture2D" uid="uid://boic00mo444sw" path="res://assets/cards/note_card-played-red.png" id="2_016n1"]
+[ext_resource type="Texture2D" uid="uid://b4sps5j2krqk3" path="res://assets/icons/cooldown.png" id="3_spfdb"]
+[ext_resource type="Texture2D" uid="uid://6y6ydpsksm3k" path="res://assets/icons/coins.png" id="3_uuph7"]
+[ext_resource type="Texture2D" uid="uid://bvvpaqtaysqpi" path="res://assets/icons/energy.png" id="5_dg2pe"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cpoja"]
 size = Vector2(220, 150)
@@ -21,20 +24,52 @@ scale = Vector2(0.5, 0.5)
 shape = SubResource("RectangleShape2D_cpoja")
 
 [node name="CostLabel" type="RichTextLabel" parent="."]
-offset_left = -49.0
-offset_top = -41.0
-offset_right = -21.0
-offset_bottom = 1.0
-theme_override_font_sizes/normal_font_size = 30
+offset_left = -38.0
+offset_top = -39.0
+offset_right = -15.0
+offset_bottom = -13.0
+theme_override_colors/default_color = Color(0.124083, 0.124083, 0.124083, 1)
+theme_override_font_sizes/normal_font_size = 18
 text = "1"
+
+[node name="CostImage" type="Sprite2D" parent="."]
+modulate = Color(0.298039, 0.270588, 0.192157, 0.552941)
+position = Vector2(-44, -25)
+scale = Vector2(0.21875, 0.21875)
+texture = ExtResource("3_uuph7")
 
 [node name="NameLabel" type="Label" parent="."]
 offset_left = -10.0
-offset_top = -19.0
+offset_top = -23.0
 offset_right = 30.0
-offset_bottom = 23.0
+offset_bottom = 19.0
 theme_override_font_sizes/font_size = 30
 text = "D"
+
+[node name="CooldownLabel" type="Label" parent="."]
+offset_left = 38.0
+offset_top = 13.0
+offset_right = 52.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "1"
+
+[node name="CooldownImage" type="Sprite2D" parent="."]
+position = Vector2(27, 25)
+scale = Vector2(0.140625, 0.140625)
+texture = ExtResource("3_spfdb")
+
+[node name="PowerImage" type="Sprite2D" parent="."]
+position = Vector2(25, -25)
+scale = Vector2(0.28125, 0.28125)
+texture = ExtResource("5_dg2pe")
+
+[node name="PowerLabel" type="Label" parent="."]
+offset_left = 32.0
+offset_top = -38.0
+offset_right = 72.0
+offset_bottom = -15.0
+text = "2"
 
 [connection signal="mouse_entered" from="Area2D" to="." method="_on_area_2d_mouse_entered"]
 [connection signal="mouse_exited" from="Area2D" to="." method="_on_area_2d_mouse_exited"]

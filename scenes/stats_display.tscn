@@ -28,3 +28,13 @@ text = "Block: 0"
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Energy: 3"
+
+[node name="VulnLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Vulnerability: 5"
+
+[node name="WeakLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Weak: 4"
