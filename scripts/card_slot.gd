@@ -93,13 +93,50 @@ func update_action_label():
 		action_label.visible = false
 
 func highlight_active():
-	typePanel.modulate = Color(1.5, 1.5, 1.5)  # Brighten
-	action_label.scale = Vector2(1.2, 1.2)  # Scale up
+	# Highlight slot as before
+	var style = typePanel.get_theme_stylebox("panel") as StyleBoxFlat
+	var highlight_style = StyleBoxFlat.new()
+	highlight_style.set_border_width_all(8)
+	highlight_style.bg_color = Color(0, 0, 0, 0)
+	
+	match slot_type:
+		SlotType.ATTACK:
+			highlight_style.border_color = Styles.COLORS.attack * 1.5
+		SlotType.BLOCK:
+			highlight_style.border_color = Styles.COLORS.block * 1.5
+		SlotType.UTILITY:
+			highlight_style.border_color = Styles.COLORS.utility * 1.5
+	
+	typePanel.add_theme_stylebox_override("panel", highlight_style)
+	action_label.scale = Vector2(1.2, 1.2)
+	
+	# Also highlight the card if there is one
+	if occupied_card:
+		occupied_card.modulate = Color(1.5, 1.5, 1.5)
+		occupied_card.scale = Vector2(1.1, 1.1)
 
 func unhighlight():
-	typePanel.modulate = Color(1, 1, 1)
+	# Reset slot style
+	var style = StyleBoxFlat.new()
+	style.set_border_width_all(6)
+	style.bg_color = Color(0, 0, 0, 0)
+	
+	match slot_type:
+		SlotType.ATTACK:
+			style.border_color = Styles.COLORS.attack
+		SlotType.BLOCK:
+			style.border_color = Styles.COLORS.block
+		SlotType.UTILITY:
+			style.border_color = Styles.COLORS.utility
+			
+	typePanel.add_theme_stylebox_override("panel", style)
 	action_label.scale = Vector2(1, 1)
 	
+	# Reset card if there is one
+	if occupied_card:
+		occupied_card.modulate = Color(1, 1, 1)
+		occupied_card.scale = Vector2(1, 1)
+		
 func get_slot_multiplier() -> float:
 	var voice_multipliers = voice_stats.get_multipliers(voice)
 	var is_front = name.ends_with("A")

@@ -13,6 +13,13 @@ var cooldown: int
 func set_card_id(id: String):
 	card_id = id
 
+func highlight():
+	modulate = Color(1.5, 1.5, 1.5)
+	scale = Vector2(1.1, 1.1)
+
+func unhighlight():
+	modulate = Color(1, 1, 1)
+	scale = Vector2(1, 1)
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:

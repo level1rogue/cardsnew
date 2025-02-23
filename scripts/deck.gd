@@ -3,7 +3,7 @@ extends Node2D
 
 var card_db_ref
 const CARD_SCENE_PATH = "res://scenes/card.tscn"
-var player_deck = ["c", "d", "c", "e", "f", "e", "f", "d"]
+var player_deck = ["c", "d", "c", "e", "f", "e", "f", "d", "g", "g", "a", "a", "b", "b"]
 var discard_pile = []
 
 # Called when the node enters the scene tree for the first time.

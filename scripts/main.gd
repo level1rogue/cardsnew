@@ -3,9 +3,9 @@ extends Node2D
 const ANIMATION_SPEEDS = {
 	"quick": 0.2,
 	"normal": 0.5,
-	"slow": 0.8
+	"slow": 1.0
 }
-var current_speed = "normal"
+var current_speed = "slow"
 
 const CardSlot = preload("res://scripts/card_slot.gd")
 
@@ -15,6 +15,11 @@ const CardSlot = preload("res://scripts/card_slot.gd")
 @onready var player_stats = $PlayerStats
 @onready var sampler = $SamplerInstrument
 @onready var battle_log = $BattleLog
+
+# Create a background setup
+@onready var background = ColorRect.new()
+@onready var particles = ColorRect.new()
+
 @onready var camera = $Camera2D
 
 var voice_stats = preload("res://scripts/voice_stats.gd").new()
@@ -23,6 +28,8 @@ var floating_text_scene = preload("res://scenes/floating_text.tscn")
 var reward_screen_scene = preload("res://scenes/reward_screen.tscn")
 
 func _ready():
+	setup_mystical_background()
+
 	if !combat_manager:
 		push_error("CombatManager node not found!")
 		return
@@ -51,6 +58,53 @@ func shake_camera(duration: float, strength: float, speed: float):
 	# Reset camera position
 	camera.offset = initial_offset
 
+func setup_mystical_background():
+	# Get the viewport size
+	var viewport_size = get_viewport_rect().size
+	
+	# Setup background
+	background.position = Vector2.ZERO
+	background.size = viewport_size
+	background.custom_minimum_size = viewport_size
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Make sure it's added as child if not already
+	if !background.is_inside_tree():
+		add_child(background)
+		background.z_index = -2
+	
+	# Apply shader
+	var bg_shader = load("res://shaders/background.gdshader")
+	if bg_shader:
+		var bg_material = ShaderMaterial.new()
+		bg_material.shader = bg_shader
+		background.material = bg_material
+		
+		# Set shader parameters
+		background.material.set_shader_parameter("speed", 0.2)
+		background.material.set_shader_parameter("scale", 3.0)
+		background.material.set_shader_parameter("distortion_strength", 0.4)
+		background.material.set_shader_parameter("color_a", Color(0.1, 0.05, 0.2))
+		background.material.set_shader_parameter("color_b", Color(0.2, 0.1, 0.3))
+		background.material.set_shader_parameter("color_c", Color(0.3, 0.15, 0.4))
+	else:
+		print("Failed to load shader!")
+	
+	# Particles setup
+	particles.set_anchors_preset(Control.PRESET_FULL_RECT)
+	particles.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	particles.size = viewport_size
+	particles.show()
+	
+	var particle_shader = load("res://shaders/mystic_particles.gdshader")
+	var particle_material = ShaderMaterial.new()
+	particle_material.shader = particle_shader
+	particles.material = particle_material
+	
+	# Add to scene with proper z-index
+	add_child(particles)
+	particles.z_index = -1
+		
 func _on_stats_changed():
 	player_stats.update_stats(
 		combat_manager.player_health,
@@ -270,29 +324,57 @@ func start_enemy_turn():
 	battle_log.add_entry("Enemy turn started", "enemy")
 	var enemy_action = enemy.current_intent
 	
+	# Show enemy's intent with delay
 	match enemy_action:
 		enemy.Intent.ATTACK:
 			battle_log.add_entry("Enemy intends to attack", "enemy")
 			battle_log.add_entry("Base attack: " + str(enemy.attack_value), "enemy")
 			if enemy.weak_turns > 0:
 				battle_log.add_entry("Weak active (" + str(enemy.weak_turns) + " turns)", "debuff")
-			await get_tree().create_timer(0.5).timeout
+			
+			# Enemy attack animation/feedback
+			enemy.highlight_for_attack()  # You'll need to create this
+			await get_tree().create_timer(ANIMATION_SPEEDS[current_speed]).timeout
+			
+			# Shake camera based on attack value
+			var attack_strength = enemy.attack_value
+			shake_camera(0.2 + (attack_strength * 0.02), 2 + (attack_strength * 0.3), 8)
+			
 			apply_damage_to_player(enemy.attack_value)
+			
 		enemy.Intent.BLOCK:
 			battle_log.add_entry("Enemy blocks for " + str(enemy.block_value), "enemy")
+			enemy.highlight_for_block()  # You'll need to create this
+			await get_tree().create_timer(ANIMATION_SPEEDS[current_speed]).timeout
 			enemy.add_block(enemy.block_value)
+			
 		enemy.Intent.ATTACK_BLOCK:
 			battle_log.add_entry("Enemy blocks for " + str(enemy.block_value) + " and attacks for " + str(enemy.attack_value), "enemy")
+			
+			# Block first
+			enemy.highlight_for_block()
+			await get_tree().create_timer(ANIMATION_SPEEDS[current_speed]).timeout
 			enemy.add_block(enemy.block_value)
-			await get_tree().create_timer(0.5).timeout
+			
+			# Then attack
+			await get_tree().create_timer(ANIMATION_SPEEDS[current_speed]).timeout
+			enemy.highlight_for_attack()
+			await get_tree().create_timer(ANIMATION_SPEEDS[current_speed]).timeout
+			
+			# Shake camera based on attack value
+			var attack_strength = enemy.attack_value
+			shake_camera(0.2 + (attack_strength * 0.02), 2 + (attack_strength * 0.3), 8)
+			
 			apply_damage_to_player(enemy.attack_value)
 	
-	await get_tree().create_timer(1.0).timeout
+	await get_tree().create_timer(ANIMATION_SPEEDS[current_speed]).timeout
+	enemy.unhighlight()  # Reset any highlights
+	
+	await get_tree().create_timer(ANIMATION_SPEEDS[current_speed]).timeout
 	enemy.end_turn()  # This will reduce status effect counters
 	enemy.set_next_intent()
 	battle_log.add_entry("Enemy prepares next action", "enemy")
-
-		
+	
 	# Reset ALL slots at the start of turn
 	for slot in get_tree().get_nodes_in_group("card_slots"):
 		slot.reset_action()
@@ -340,3 +422,7 @@ func _on_reward_selected():
 	# Handle reward selection and transition to next scene
 	# For now, just restart battle
 	get_tree().reload_current_scene()
+
+func _process(delta):
+	if particles.material:
+		particles.material.set_shader_parameter("time", Time.get_ticks_msec() / 1000.0)

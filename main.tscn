@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://cdn7te02yfxv2"]
+[gd_scene load_steps=29 format=3 uid="uid://cdn7te02yfxv2"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_t52mj"]
 [ext_resource type="Script" path="res://scripts/card_manager.gd" id="2_gcqbg"]
@@ -20,6 +20,8 @@
 [ext_resource type="PackedScene" uid="uid://bnd5j4rptjo0g" path="res://scenes/stats_display.tscn" id="18_usmh5"]
 [ext_resource type="PackedScene" uid="uid://bp6xdqjobwxcm" path="res://scenes/floating_text.tscn" id="19_fkjdy"]
 [ext_resource type="PackedScene" uid="uid://dj08cw7xhq84" path="res://scenes/battle_log.tscn" id="20_baqo8"]
+[ext_resource type="AudioStream" uid="uid://b64e7blvnyjj1" path="res://assets/sound/back_track.mp3" id="21_3b6i6"]
+[ext_resource type="Script" path="res://addons/SimpleSampler/sampler.gd" id="22_0fv3g"]
 
 [sub_resource type="Resource" id="Resource_g4bxl"]
 script = ExtResource("8_0i63p")
@@ -129,6 +131,7 @@ script = ExtResource("5_4jp7m")
 script = ExtResource("6_2lhe2")
 
 [node name="Button" type="Button" parent="."]
+z_index = 2
 offset_left = 1304.0
 offset_top = 662.0
 offset_right = 1401.0
@@ -161,3 +164,10 @@ offset_bottom = 819.0
 
 [node name="Camera2D" type="Camera2D" parent="."]
 anchor_mode = 0
+
+[node name="BackTrack" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("21_3b6i6")
+volume_db = -7.222
+autoplay = true
+parameters/looping = true
+script = ExtResource("22_0fv3g")

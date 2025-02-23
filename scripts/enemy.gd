@@ -29,7 +29,18 @@ func _ready():
 	set_next_intent()
 	update_displays()
 	
+func highlight_for_attack():
+	modulate = Color(1.5, 0.5, 0.5)  # Red tint
+	scale = Vector2(1.1, 1.1)  # Slight scale up
 
+func highlight_for_block():
+	modulate = Color(0.5, 1.5, 1.5)  # Blue tint
+	scale = Vector2(1.1, 1.1)  # Slight scale up
+
+func unhighlight():
+	modulate = Color(1, 1, 1)  # Reset color
+	scale = Vector2(1, 1)  # Reset scale
+		
 func update_displays():
 	stats_display.update_stats(health, block, -1, vulnerability_turns, weak_turns)
 	update_intent_display()
