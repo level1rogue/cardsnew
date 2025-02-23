@@ -99,20 +99,15 @@ func add_weak(amount: int):
 	update_displays()
 
 func take_damage(damage: int):
-	# Modify the damage amount to account for vulnerability
-	var modified_damage = damage
-	if vulnerability_turns > 0:
-			emit_signal("log_message", "Vulnerability active: " + str(damage) + " -> " + str(int(damage * 1.5)), "debuff")
-			modified_damage = int(damage * 1.5)  # Flat 50% increase
-   
+	  
 	# Apply block
 	if block > 0:
-		var blocked = min(block, modified_damage)
+		var blocked = min(block, damage)
 		block -= blocked
-		modified_damage -= blocked
+		damage -= blocked
 	
-	health -= modified_damage
-	show_floating_text(modified_damage, true)  # Show damage
+	health -= damage
+	show_floating_text(damage, true)  # Show damage
 	update_displays()
 
 func add_block(amount: int):

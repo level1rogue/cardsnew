@@ -1,5 +1,12 @@
 extends Node2D
 
+const ANIMATION_SPEEDS = {
+	"quick": 0.2,
+	"normal": 0.5,
+	"slow": 0.8
+}
+var current_speed = "normal"
+
 const CardSlot = preload("res://scripts/card_slot.gd")
 
 @onready var combat_manager = $CombatManager
@@ -8,6 +15,7 @@ const CardSlot = preload("res://scripts/card_slot.gd")
 @onready var player_stats = $PlayerStats
 @onready var sampler = $SamplerInstrument
 @onready var battle_log = $BattleLog
+@onready var camera = $Camera2D
 
 var voice_stats = preload("res://scripts/voice_stats.gd").new()
 var floating_text_scene = preload("res://scenes/floating_text.tscn")
@@ -28,7 +36,20 @@ func _ready():
 func _on_enemy_log_message(text: String, type: String):
 	battle_log.add_entry(text, type)
 
-
+func shake_camera(duration: float, strength: float, speed: float):
+	var initial_offset = camera.offset
+	var elapsed_time = 0.0
+	
+	while elapsed_time < duration:
+		elapsed_time += speed * get_process_delta_time()
+		var offset = Vector2()
+		offset.x = randf_range(-strength, strength)
+		offset.y = randf_range(-strength, strength)
+		camera.offset = offset
+		await get_tree().create_timer(0.01).timeout
+	
+	# Reset camera position
+	camera.offset = initial_offset
 
 func _on_stats_changed():
 	player_stats.update_stats(
@@ -105,27 +126,36 @@ func calculate_slot_effect(card, slot) -> Dictionary:
 	
 func resolve_player_actions():
 	var effects = {
-			"attack": 0,
-			"block": 0,
-			"vulnerability": 0,
-			"weak": 0
+		"attack": 0,
+		"block": 0,
+		"vulnerability": 0,
+		"weak": 0
 	}
 
 	battle_log.add_entry("Playing cards...", "normal")
-	play_card_notes()
 	
-	# Calculate all effects
+	# Play cards one by one with visual feedback
 	for slot in get_tree().get_nodes_in_group("card_slots"):
-			if slot.card_in_slot and slot.occupied_card:
-					var effect = calculate_slot_effect(slot.occupied_card, slot)
-					effects[effect.type] += effect.value
-					slot.record_action()
-					
-					battle_log.add_entry(
-							voice_stats.get_multipliers(slot.voice).name + 
-							" voice applies " + str(effect.value) + " " + effect.type,
-							effect.type
-					)
+		if slot.card_in_slot and slot.occupied_card:
+			# Highlight active slot
+			slot.highlight_active()
+			await get_tree().create_timer(ANIMATION_SPEEDS[current_speed]).timeout
+			
+			# Play note and show effect
+			sampler.play_note(slot.occupied_card.note, slot.octave)
+			var effect = calculate_slot_effect(slot.occupied_card, slot)
+			effects[effect.type] += effect.value  # Add this line back
+			slot.record_action()
+			slot.update_action_label()
+			
+			battle_log.add_entry(
+				voice_stats.get_multipliers(slot.voice).name + 
+				" voice applies " + str(effect.value) + " " + effect.type,
+				effect.type
+			)
+			
+			await get_tree().create_timer(ANIMATION_SPEEDS[current_speed]).timeout
+			slot.unhighlight()
 	
 	# Apply effects in order
 	if effects.vulnerability > 0:
@@ -140,7 +170,7 @@ func resolve_player_actions():
 	if effects.attack > 0:
 			await get_tree().create_timer(0.5).timeout
 			apply_damage_to_enemy(effects.attack)
-			
+	
 	update_slot_availability()  # Update after recording actions
 	
 	# Second pass: Reset unused voices
@@ -166,28 +196,39 @@ func update_slot_availability(): #FIXME: Slots don't update correctly
 func apply_damage_to_enemy(damage: int):
 	var initial_health = enemy.health
 	var initial_block = enemy.block
-	
+
+	var base_duration = 0.2
+	var max_duration = 1.2
+	var duration = min(base_duration + (damage * 1.5), max_duration)
+
+	var base_strength = 2
+	var strength = base_strength + (damage * 0.5)  # Increases with damage
+
+	shake_camera(duration, strength, 8)  # Fixed speed of 8
+
 	# Log the initial damage value
 	battle_log.add_entry("Base damage: " + str(damage), "normal")
 	
-	# Check vulnerability before damage
+	# Calculate vulnerability-modified damage before applying
+	var modified_damage = damage
 	if enemy.vulnerability_turns > 0:
-			battle_log.add_entry("Vulnerability +" + str(enemy.vulnerability_turns) + " turns: damage x1.5", "debuff")
+		modified_damage = int(damage * 1.5)
+		battle_log.add_entry("Vulnerability +" + str(enemy.vulnerability_turns) + 
+			" turns: " + str(damage) + " -> " + str(modified_damage), "debuff")
 	
-	enemy.take_damage(damage)
+	enemy.take_damage(modified_damage)
 	
-	var damage_blocked = min(initial_block, damage)
-	var damage_dealt = min(initial_health - enemy.health, damage - damage_blocked)
+	var damage_blocked = min(initial_block, modified_damage)
+	var damage_dealt = min(initial_health - enemy.health, modified_damage - damage_blocked)
 	
 	if damage_blocked > 0:
 		battle_log.add_entry("Enemy blocked " + str(damage_blocked) + " damage", "block")
 	if damage_dealt > 0:
-		battle_log.add_entry("Enemy took " + str(damage_dealt) + " damage", "damage")
-
-	# Check for enemy death
-	if enemy.health <= 0:
-			await get_tree().create_timer(1.0).timeout  # Short delay
-			show_victory_screen()
+		battle_log.add_entry("Enemy took " + str(damage_dealt) + " final damage", "damage")
+		# Check for enemy death
+		if enemy.health <= 0:
+				await get_tree().create_timer(1.0).timeout  # Short delay
+				show_victory_screen()
 
 
 func apply_damage_to_player(damage: int):
@@ -223,6 +264,7 @@ func clear_played_cards():
 			slot.occupied_card.queue_free()
 			slot.card_in_slot = false
 			slot.occupied_card = null
+			slot.update_action_label()
 
 func start_enemy_turn():
 	battle_log.add_entry("Enemy turn started", "enemy")

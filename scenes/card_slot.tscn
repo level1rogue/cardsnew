@@ -67,3 +67,13 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Action" type="Node2D" parent="."]
+
+[node name="ActionLabel" type="Label" parent="Action"]
+offset_left = 25.0
+offset_top = -32.0
+offset_right = 77.0
+offset_bottom = 2.0
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1

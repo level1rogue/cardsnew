@@ -8,7 +8,7 @@ var discard_pile = []
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	card_db_ref = preload("res://scripts/card_db.gd")
+	card_db_ref = preload("res://lib/card_db.gd")
 	$DeckCounter.text = str(player_deck.size())
 	
 	player_deck.shuffle()

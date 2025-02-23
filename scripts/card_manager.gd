@@ -36,9 +36,10 @@ func finish_drag():
 	var card_slot_found = raycast_check_for_card_slot()
 	 # First, find if the card was in a slot before and clear that slot
 	for slot in get_tree().get_nodes_in_group("card_slots"):
-			if slot.occupied_card == card_being_dragged:
-					slot.card_in_slot = false
-					slot.occupied_card = null
+		if slot.occupied_card == card_being_dragged:
+			slot.card_in_slot = false
+			slot.occupied_card = null
+			slot.update_action_label()
 	
 	# Then handle placing in new slot or returning to hand
 	if card_slot_found and not card_slot_found.card_in_slot and card_slot_found.can_play_card():
@@ -48,9 +49,9 @@ func finish_drag():
 		card_being_dragged.position = slot_center
 		card_slot_found.card_in_slot = true
 		card_slot_found.occupied_card = card_being_dragged
-	
+		card_slot_found.update_action_label()
 	else:
-			player_hand_reference.add_card_to_hand(card_being_dragged)
+		player_hand_reference.add_card_to_hand(card_being_dragged)
 	
 	card_being_dragged = null
 			

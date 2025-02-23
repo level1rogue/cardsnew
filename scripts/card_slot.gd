@@ -16,7 +16,10 @@ var display_cooldown: int = 0   # For display purposes
 @onready var lock_image = $Panel/LockImage
 @onready var lock_label = $Panel/LockLabel
 @onready var mult_label = $MultLabel  # Reference to the Label node
+@onready var action_label = $Action/ActionLabel
 var voice_stats = preload("res://scripts/voice_stats.gd").new()
+const Styles = preload("res://lib/styles.gd")
+
 
 func _ready():
 	add_to_group("card_slots")
@@ -24,6 +27,11 @@ func _ready():
 	var slot_name = name  # e.g. "CardSlot1A"
 	var voice_number = int(slot_name.substr(8, 1))  # Gets the number after "CardSlot"
 	var is_front_row = slot_name.ends_with("A")
+
+	if is_front_row:
+		action_label.position.y = -35  # Adjust value as needed
+	else:
+		action_label.position.y = 70   # Adjust value as needed
 
 	# Reset modulate values to full brightness
 	panel.modulate = Color(1, 1, 1, 1)
@@ -60,12 +68,14 @@ func _ready():
 	# Set slot color based on type
 	match slot_type:
 		SlotType.ATTACK:
-			style.border_color = Color(0.8, 0.35, 0.36, 1.0)
+			style.border_color = Styles.COLORS.attack
+			action_label.add_theme_color_override("font_color", Styles.COLORS.attack)
 		SlotType.BLOCK:
-			style.border_color = Color(0.35, 0.78, 0.80, 1.0)
+			style.border_color = Styles.COLORS.block
+			action_label.add_theme_color_override("font_color", Styles.COLORS.block)
 		SlotType.UTILITY:
-			style.border_color = Color(0.83, 0.65, 0.13, 1.0)
-			
+			style.border_color = Styles.COLORS.utility
+			action_label.add_theme_color_override("font_color", Styles.COLORS.utility)
 	# Set the panel style
 	typePanel.add_theme_stylebox_override("panel", style)
 	# Set the multiplier text
@@ -73,7 +83,23 @@ func _ready():
 	mult_label.text = "x" + str(multiplier)
 
 	update_slot_availability()
+  
+func update_action_label():
+	if card_in_slot and occupied_card:
+		var total_effect = int(occupied_card.power * get_slot_multiplier())
+		action_label.text = str(total_effect)
+		action_label.visible = true
+	else:
+		action_label.visible = false
 
+func highlight_active():
+	typePanel.modulate = Color(1.5, 1.5, 1.5)  # Brighten
+	action_label.scale = Vector2(1.2, 1.2)  # Scale up
+
+func unhighlight():
+	typePanel.modulate = Color(1, 1, 1)
+	action_label.scale = Vector2(1, 1)
+	
 func get_slot_multiplier() -> float:
 	var voice_multipliers = voice_stats.get_multipliers(voice)
 	var is_front = name.ends_with("A")
@@ -81,17 +107,17 @@ func get_slot_multiplier() -> float:
 	match slot_type:
 		SlotType.ATTACK:
 			return voice_multipliers.get(
-				"attack_multiplier_" + ("front" if is_front else "back"), 
+				"attack_multiplier_" + ("front" if is_front else "back"),
 				1.0
 			)
 		SlotType.BLOCK:
 			return voice_multipliers.get(
-				"block_multiplier_" + ("front" if is_front else "back"), 
+				"block_multiplier_" + ("front" if is_front else "back"),
 				1.0
 			)
 		SlotType.UTILITY:
 			return voice_multipliers.get(
-				"utility_multiplier_" + ("front" if is_front else "back"), 
+				"utility_multiplier_" + ("front" if is_front else "back"),
 				1.0
 			)
 	return 1.0
